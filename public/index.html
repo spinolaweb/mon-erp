@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau de Bord — ERP E-Commerce Pro</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="brand">
+<div class="brand-icon"><i class="fas fa-chart-line"></i></div>
+<div><div class="brand-title">ERP E-Commerce</div><div class="brand-sub">Profit Calculator</div></div>
+</div>
+<nav class="nav">
+<a href="index.html" class="nav-item active"><i class="fas fa-home nav-icon"></i> Tableau de Bord</a>
+<a href="entry.html" class="nav-item"><i class="fas fa-plus-circle nav-icon"></i> Nouvelle Entrée</a>
+<a href="history.html" class="nav-item"><i class="fas fa-history nav-icon"></i> Historique</a>
+<a href="analytics.html" class="nav-item"><i class="fas fa-chart-bar nav-icon"></i> Analytiques</a>
+<a href="settings.html" class="nav-item"><i class="fas fa-cog nav-icon"></i> Paramètres</a>
+</nav>
+<div class="rate-badge">
+<p>Taux de Change</p>
+<h4>1 USD = <span id="sidebar-rate">250</span> DZD</h4>
+</div>
+</aside>
+<main class="main">
+<header class="header">
+<div class="page-title">
+<h1>Tableau de Bord</h1>
+<p>Vue d'ensemble de votre business en temps réel</p>
+</div>
+<div class="header-actions">
+<a href="/api/export" onclick="event.preventDefault(); API.exportCSV();" class="btn btn-outline btn-sm"><i class="fas fa-download"></i> Exporter CSV</a>
+<div id="conn-status" class="status status-online"><span class="status-dot"></span> Backend Online</div>
+</div>
+</header>
+<div class="content fade-in">
+
+<div class="kpi-grid">
+<div class="kpi-card">
+<div class="kpi-header">
+<div class="kpi-icon blue"><i class="fas fa-shopping-bag"></i></div>
+<span class="kpi-label">Commandes</span>
+</div>
+<div class="kpi-value" id="dash-orders">0</div>
+<div class="kpi-sub"><span id="dash-delivered" style="color:var(--success)">0</span> livrées</div>
+</div>
+
+<div class="kpi-card">
+<div class="kpi-header">
+<div class="kpi-icon green"><i class="fas fa-dollar-sign"></i></div>
+<span class="kpi-label">Revenus</span>
+</div>
+<div class="kpi-value" style="color:var(--success)">$<span id="dash-revenue">0</span></div>
+<div class="kpi-sub"><span id="dash-revenue-dzd">0</span> DZD</div>
+</div>
+
+<div class="kpi-card">
+<div class="kpi-header">
+<div class="kpi-icon emerald"><i class="fas fa-wallet"></i></div>
+<span class="kpi-label">Bénéfice Net</span>
+</div>
+<div class="kpi-value" style="color:#059669">$<span id="dash-profit">0</span></div>
+<div class="kpi-sub"><span id="dash-profit-dzd">0</span> DZD</div>
+</div>
+
+<div class="kpi-card">
+<div class="kpi-header">
+<div class="kpi-icon purple"><i class="fas fa-bullseye"></i></div>
+<span class="kpi-label">ROAS</span>
+</div>
+<div class="kpi-value" style="color:var(--purple)"><span id="dash-roas">0</span>X</div>
+<div class="kpi-sub">Break Even: <span id="dash-breakeven" style="color:var(--warning)">0</span>X</div>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;margin-bottom:24px;">
+<div class="card">
+<div class="card-header"><h3 class="card-title">Métriques Publicitaires</h3></div>
+<div class="table-wrap">
+<table class="table">
+<tr><td style="color:var(--text-muted)">Dépenses Pub</td><td style="text-align:right;font-weight:600">$<span id="dash-adspend">0</span></td></tr>
+<tr><td style="color:var(--text-muted)">CPR (Coût par Résultat)</td><td style="text-align:right;font-weight:600">$<span id="dash-cpr">0</span></td></tr>
+<tr><td style="color:var(--text-muted)">CPR CAP (Break Even)</td><td style="text-align:right;font-weight:600;color:var(--primary)">$<span id="dash-cprcap">0</span></td></tr>
+<tr><td style="color:var(--text-muted)">Coût / Commande Livrée</td><td style="text-align:right;font-weight:600">$<span id="dash-cpd">0</span></td></tr>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><h3 class="card-title">Performance Clics</h3></div>
+<div class="table-wrap">
+<table class="table">
+<tr><td style="color:var(--text-muted)">Nombre de Clicks</td><td style="text-align:right;font-weight:600" id="dash-clicks">0</td></tr>
+<tr><td style="color:var(--text-muted)">RPC (Revenue par Click)</td><td style="text-align:right;font-weight:600">$<span id="dash-rpc">0</span></td></tr>
+<tr><td style="color:var(--text-muted)">CPC (Coût par Click)</td><td style="text-align:right;font-weight:600">$<span id="dash-cpc">0</span></td></tr>
+<tr><td style="color:var(--text-muted)">Taux de Livraison</td><td style="text-align:right;font-weight:600;color:var(--success)"><span id="dash-drate">0</span>%</td></tr>
+</table>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><h3 class="card-title">Répartition des Coûts</h3></div>
+<div class="chart-container"><canvas id="costChart"></canvas></div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header">
+<h3 class="card-title">Entrées Récentes</h3>
+<a href="history.html" class="btn btn-sm btn-outline">Voir tout</a>
+</div>
+<div class="table-wrap">
+<table class="table">
+<thead><tr>
+<th>Date</th><th>Campagne</th><th>Commandes</th><th>Livrées</th>
+<th>Revenus</th><th>Dépenses</th><th>Profit</th><th>ROAS</th>
+</tr></thead>
+<tbody id="recent-table">
+<tr><td colspan="8" class="empty"><i class="fas fa-inbox"></i><br>Aucune entrée pour le moment</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+
+</div>
+</main>
+</div>
+<script src="/js/calculator.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+
+<script>
+let charts = {};
+
+async function updateDashboard() {
+    const entries = await API.getEntries();
+    const settings = await UI.loadSettings();
+    const rate = settings.exchangeRate || 250;
+
+    if (entries.length === 0) {
+        document.getElementById('recent-table').innerHTML = '<tr><td colspan="8" class="empty"><i class="fas fa-inbox"></i><br>Aucune entrée pour le moment</td></tr>';
+        return;
+    }
+
+    const latest = entries[0];
+    const m = Calculator.compute(latest, rate);
+
+    document.getElementById('dash-orders').textContent = UI.formatNum(m.orders, 0);
+    document.getElementById('dash-delivered').textContent = UI.formatNum(m.delivered, 0);
+    document.getElementById('dash-revenue').textContent = UI.formatNum(m.revenue, 2);
+    document.getElementById('dash-revenue-dzd').textContent = UI.formatNum(m.revenueDZD, 0) + ' DZD';
+    document.getElementById('dash-profit').textContent = UI.formatNum(m.profit, 2);
+    document.getElementById('dash-profit-dzd').textContent = UI.formatNum(m.profitDZD, 0) + ' DZD';
+    document.getElementById('dash-roas').textContent = UI.formatNum(m.roas, 2);
+    document.getElementById('dash-breakeven').textContent = UI.formatNum(m.breakEvenRoas, 2);
+    document.getElementById('dash-adspend').textContent = UI.formatNum(m.adSpend, 2);
+    document.getElementById('dash-cpr').textContent = UI.formatNum(m.cpr, 2);
+    document.getElementById('dash-cprcap').textContent = UI.formatNum(m.cprCap, 2);
+    document.getElementById('dash-cpd').textContent = UI.formatNum(m.costPerDelivered, 2);
+    document.getElementById('dash-clicks').textContent = UI.formatNum(m.clicks, 0);
+    document.getElementById('dash-rpc').textContent = UI.formatNum(m.rpc, 2);
+    document.getElementById('dash-cpc').textContent = UI.formatNum(m.cpc, 3);
+    document.getElementById('dash-drate').textContent = UI.formatNum((m.delivered / m.orders * 100) || 0, 1);
+
+    const recent = entries.slice(0, 5);
+    document.getElementById('recent-table').innerHTML = recent.map(e => {
+        const em = Calculator.compute(e, rate);
+        return `<tr>
+            <td>${e.date}</td>
+            <td>${e.campaign}</td>
+            <td>${UI.formatNum(em.orders, 0)}</td>
+            <td style="color:var(--success);font-weight:600">${UI.formatNum(em.delivered, 0)}</td>
+            <td style="font-weight:600">$${UI.formatNum(em.revenue, 2)}</td>
+            <td style="color:var(--danger)">$${UI.formatNum(em.adSpend, 2)}</td>
+            <td style="font-weight:700;color:${em.profit>=0?'#059669':'var(--danger)'}">$${UI.formatNum(em.profit, 2)}</td>
+            <td><span class="badge ${em.roas>=em.breakEvenRoas?'badge-green':'badge-red'}">${UI.formatNum(em.roas, 2)}X</span></td>
+        </tr>`;
+    }).join('');
+
+    if (charts.cost) charts.cost.destroy();
+    const ctx = document.getElementById('costChart').getContext('2d');
+    charts.cost = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Bénéfice Net', 'Coût Produit', 'Dépenses Pub'],
+            datasets: [{ data: [Math.max(m.profit,0), m.totalProductCost, m.adSpend], backgroundColor: ['#10b981','#f59e0b','#ef4444'], borderWidth: 0 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', updateDashboard);
+</script>
+
+</body>
+</html>

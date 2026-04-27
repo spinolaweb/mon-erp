@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytiques — ERP E-Commerce Pro</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="brand">
+<div class="brand-icon"><i class="fas fa-chart-line"></i></div>
+<div><div class="brand-title">ERP E-Commerce</div><div class="brand-sub">Profit Calculator</div></div>
+</div>
+<nav class="nav">
+<a href="index.html" class="nav-item"><i class="fas fa-home nav-icon"></i> Tableau de Bord</a>
+<a href="entry.html" class="nav-item"><i class="fas fa-plus-circle nav-icon"></i> Nouvelle Entrée</a>
+<a href="history.html" class="nav-item"><i class="fas fa-history nav-icon"></i> Historique</a>
+<a href="analytics.html" class="nav-item active"><i class="fas fa-chart-bar nav-icon"></i> Analytiques</a>
+<a href="settings.html" class="nav-item"><i class="fas fa-cog nav-icon"></i> Paramètres</a>
+</nav>
+<div class="rate-badge">
+<p>Taux de Change</p>
+<h4>1 USD = <span id="sidebar-rate">250</span> DZD</h4>
+</div>
+</aside>
+<main class="main">
+<header class="header">
+<div class="page-title">
+<h1>Analytiques</h1>
+<p>Graphiques et tendances de votre business</p>
+</div>
+<div class="header-actions">
+<a href="/api/export" onclick="event.preventDefault(); API.exportCSV();" class="btn btn-outline btn-sm"><i class="fas fa-download"></i> Exporter CSV</a>
+<div id="conn-status" class="status status-online"><span class="status-dot"></span> Backend Online</div>
+</div>
+</header>
+<div class="content fade-in">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:20px;">
+<div class="card">
+<div class="card-header"><h3 class="card-title">Évolution Revenus vs Profit</h3></div>
+<div class="chart-container"><canvas id="revenueChart"></canvas></div>
+</div>
+<div class="card">
+<div class="card-header"><h3 class="card-title">ROAS & Break Even</h3></div>
+<div class="chart-container"><canvas id="roasChart"></canvas></div>
+</div>
+<div class="card">
+<div class="card-header"><h3 class="card-title">Commandes vs Livraisons</h3></div>
+<div class="chart-container"><canvas id="ordersChart"></canvas></div>
+</div>
+<div class="card">
+<div class="card-header"><h3 class="card-title">Répartition des Dépenses</h3></div>
+<div class="chart-container"><canvas id="expenseChart"></canvas></div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script src="/js/calculator.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+
+<script>
+let charts = {};
+
+async function renderAnalytics() {
+    const settings = await UI.loadSettings();
+    const entries = await API.getEntries();
+    const rate = settings.exchangeRate || 250;
+
+    if (entries.length < 2) {
+        document.querySelectorAll('.chart-container').forEach(el => {
+            el.innerHTML = '<div class="empty" style="padding:24px"><i class="fas fa-chart-area"></i><br>Ajoutez au moins 2 entrées pour voir les graphiques</div>';
+        });
+        return;
+    }
+
+    const sorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const labels = sorted.map(e => e.date.slice(5));
+    const revenues = sorted.map(e => Calculator.compute(e, rate).revenue);
+    const profits = sorted.map(e => Calculator.compute(e, rate).profit);
+    const roasData = sorted.map(e => Calculator.compute(e, rate).roas);
+    const beData = sorted.map(e => Calculator.compute(e, rate).breakEvenRoas);
+    const ordersData = sorted.map(e => Calculator.compute(e, rate).orders);
+    const delData = sorted.map(e => Calculator.compute(e, rate).delivered);
+    const adSpends = sorted.map(e => Calculator.compute(e, rate).adSpend);
+    const prodCosts = sorted.map(e => Calculator.compute(e, rate).totalProductCost);
+
+    if (charts.rev) charts.rev.destroy();
+    if (charts.roas) charts.roas.destroy();
+    if (charts.ord) charts.ord.destroy();
+    if (charts.exp) charts.exp.destroy();
+
+    charts.rev = new Chart(document.getElementById('revenueChart'), {
+        type: 'line',
+        data: { labels, datasets: [
+            { label: 'Revenus', data: revenues, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4 },
+            { label: 'Profit', data: profits, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4 }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    charts.roas = new Chart(document.getElementById('roasChart'), {
+        type: 'line',
+        data: { labels, datasets: [
+            { label: 'ROAS', data: roasData, borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.1)', fill: true, tension: 0.4 },
+            { label: 'Break Even', data: beData, borderColor: '#f97316', borderDash: [5,5], tension: 0.4 }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    charts.ord = new Chart(document.getElementById('ordersChart'), {
+        type: 'bar',
+        data: { labels, datasets: [
+            { label: 'Commandes', data: ordersData, backgroundColor: '#3b82f6', borderRadius: 4 },
+            { label: 'Livrées', data: delData, backgroundColor: '#10b981', borderRadius: 4 }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    charts.exp = new Chart(document.getElementById('expenseChart'), {
+        type: 'bar',
+        data: { labels, datasets: [
+            { label: 'Dépenses Pub', data: adSpends, backgroundColor: '#ef4444', borderRadius: 4 },
+            { label: 'Coût Produit', data: prodCosts, backgroundColor: '#f59e0b', borderRadius: 4 }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true } } }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', renderAnalytics);
+</script>
+
+</body>
+</html>
