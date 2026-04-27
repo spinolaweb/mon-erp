@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP E-Commerce Pro — Profit Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-link { transition: all 0.2s; }
+        .sidebar-link:hover, .sidebar-link.active { background: rgba(59,130,246,0.1); color: #2563eb; border-right: 3px solid #2563eb; }
+        .kpi-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .fade-in { animation: fadeIn 0.4s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .glass { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); }
+        .input-field:focus { ring: 2px; ring-color: #3b82f6; border-color: #3b82f6; }
+        .currency-badge { font-variant-numeric: tabular-nums; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+<base target="_blank">
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- Layout -->
+<div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col z-20">
+        <div class="p-6 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-800 text-sm">ERP E-Commerce</h1>
+                    <p class="text-xs text-slate-500">Profit Calculator</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 py-4 space-y-1">
+            <a href="#" onclick="showPage('dashboard')" id="nav-dashboard" class="sidebar-link active flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600">
+                <i class="fas fa-home w-5"></i> Tableau de Bord
+            </a>
+            <a href="#" onclick="showPage('entry')" id="nav-entry" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600">
+                <i class="fas fa-plus-circle w-5"></i> Nouvelle Entrée
+            </a>
+            <a href="#" onclick="showPage('history')" id="nav-history" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600">
+                <i class="fas fa-history w-5"></i> Historique
+            </a>
+            <a href="#" onclick="showPage('analytics')" id="nav-analytics" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600">
+                <i class="fas fa-chart-bar w-5"></i> Analytiques
+            </a>
+            <a href="#" onclick="showPage('settings')" id="nav-settings" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600">
+                <i class="fas fa-cog w-5"></i> Paramètres
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-100">
+            <div class="bg-blue-50 rounded-lg p-3">
+                <p class="text-xs text-blue-600 font-medium mb-1">Taux de Change</p>
+                <p class="text-lg font-bold text-blue-700 currency-badge">1 USD = <span id="sidebar-rate">250</span> DZD</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto">
+        <!-- Header -->
+        <header class="glass sticky top-0 z-10 border-b border-slate-200 px-8 py-4 flex justify-between items-center">
+            <div>
+                <h2 id="page-title" class="text-xl font-bold text-slate-800">Tableau de Bord</h2>
+                <p id="page-subtitle" class="text-sm text-slate-500">Vue d'ensemble de votre business</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="exportCSV()" class="hidden md:flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
+                    <i class="fas fa-download"></i> Exporter CSV
+                </button>
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-xs font-medium">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    En ligne
+                </div>
+            </div>
+        </header>
+
+        <div class="p-8 max-w-7xl mx-auto">
+
+            <!-- DASHBOARD PAGE -->
+            <div id="page-dashboard" class="fade-in space-y-6">
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="kpi-card bg-white rounded-xl p-5 border border-slate-200">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                                <i class="fas fa-shopping-bag"></i>
+                            </div>
+                            <span class="text-xs font-medium text-slate-400">Commandes</span>
+                        </div>
+                        <p class="text-2xl font-bold text-slate-800 currency-badge" id="dash-orders">0</p>
+                        <p class="text-xs text-slate-500 mt-1"><span id="dash-delivered" class="text-green-600 font-medium">0</span> livrées</p>
+                    </div>
+
+                    <div class="kpi-card bg-white rounded-xl p-5 border border-slate-200">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center text-green-600">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <span class="text-xs font-medium text-slate-400">Revenus</span>
+                        </div>
+                        <p class="text-2xl font-bold text-slate-800 currency-badge">$<span id="dash-revenue">0</span></p>
+                        <p class="text-xs text-slate-500 mt-1"><span id="dash-revenue-dzd" class="text-slate-600 font-medium">0</span> DZD</p>
+                    </div>
+
+                    <div class="kpi-card bg-white rounded-xl p-5 border border-slate-200">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
+                                <i class="fas fa-wallet"></i>
+                            </div>
+                            <span class="text-xs font-medium text-slate-400">Bénéfice Net</span>
+                        </div>
+                        <p class="text-2xl font-bold text-emerald-600 currency-badge">$<span id="dash-profit">0</span></p>
+                        <p class="text-xs text-slate-500 mt-1"><span id="dash-profit-dzd" class="text-slate-600 font-medium">0</span> DZD</p>
+                    </div>
+
+                    <div class="kpi-card bg-white rounded-xl p-5 border border-slate-200">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center text-purple-600">
+                                <i class="fas fa-bullseye"></i>
+                            </div>
+                            <span class="text-xs font-medium text-slate-400">ROAS</span>
+                        </div>
+                        <p class="text-2xl font-bold text-purple-600 currency-badge"><span id="dash-roas">0</span>X</p>
+                        <p class="text-xs text-slate-500 mt-1">Break Even: <span id="dash-breakeven" class="text-orange-500 font-medium">0</span>X</p>
+                    </div>
+                </div>
+
+                <!-- Secondary Metrics -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-slate-700 mb-4">Métriques Publicitaires</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span class="text-sm text-slate-500">Dépenses Pub</span>
+                                <span class="text-sm font-bold text-slate-700">$<span id="dash-adspend">0</span></span>
+                            </div>
+                            <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span class="text-sm text-slate-500">CPR (Cost par Résultat)</span>
+                                <span class="text-sm font-bold text-slate-700">$<span id="dash-cpr">0</span></span>
+                            </div>
+                            <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span class="text-sm text-slate-500">CPR CAP (Break Even)</span>
+                                <span class="text-sm font-bold text-blue-600">$<span id="dash-cprcap">0</span></span>
+                            </div>
+                            <div class="flex justify-between items-center py-2">
+                                <span class="text-sm text-slate-500">Coût / Commande Livrée</span>
+                                <span class="text-sm font-bold text-slate-700">$<span id="dash-cpd">0</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-slate-700 mb-4">Performance Clics</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span class="text-sm text-slate-500">Nombre de Clicks</span>
+                                <span class="text-sm font-bold text-slate-700" id="dash-clicks">0</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span class="text-sm text-slate-500">RPC (Revenue par Click)</span>
+                                <span class="text-sm font-bold text-slate-700">$<span id="dash-rpc">0</span></span>
+                            </div>
+                            <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                                <span class="text-sm text-slate-500">CPC (Coût par Click)</span>
+                                <span class="text-sm font-bold text-slate-700">$<span id="dash-cpc">0</span></span>
+                            </div>
+                            <div class="flex justify-between items-center py-2">
+                                <span class="text-sm text-slate-500">Taux de Livraison</span>
+                                <span class="text-sm font-bold text-green-600"><span id="dash-drate">0</span>%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-5 border border-slate-200">
+                        <h3 class="text-sm font-semibold text-slate-700 mb-4">Répartition des Coûts</h3>
+                        <canvas id="costChart" height="180"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Entries -->
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="font-semibold text-slate-700">Entrées Récentes</h3>
+                        <button onclick="showPage('history')" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Voir tout</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 text-slate-500">
+                                <tr>
+                                    <th class="px-6 py-3 text-left font-medium">Date</th>
+                                    <th class="px-6 py-3 text-left font-medium">Commandes</th>
+                                    <th class="px-6 py-3 text-left font-medium">Livrées</th>
+                                    <th class="px-6 py-3 text-left font-medium">Revenus</th>
+                                    <th class="px-6 py-3 text-left font-medium">Dépenses</th>
+                                    <th class="px-6 py-3 text-left font-medium">Profit</th>
+                                    <th class="px-6 py-3 text-left font-medium">ROAS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-table" class="divide-y divide-slate-100">
+                                <tr><td colspan="7" class="px-6 py-8 text-center text-slate-400">Aucune entrée pour le moment</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NEW ENTRY PAGE -->
+            <div id="page-entry" class="hidden fade-in space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Form -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-white rounded-xl border border-slate-200 p-6">
+                            <h3 class="font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                                <i class="fas fa-edit text-blue-600"></i> Variables d'Entrée
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                                    <input type="date" id="inp-date" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Nom de Campagne (optionnel)</label>
+                                    <input type="text" id="inp-campaign" placeholder="Ex: Campagne Été 2024" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Nombre de Commandes</label>
+                                    <input type="number" id="inp-orders" value="62" min="0" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" oninput="updatePreview()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Taux de Confirmation (%)</label>
+                                    <input type="number" id="inp-confirmation" value="70" min="0" max="100" step="0.1" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" oninput="updatePreview()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Taux de Livraison (%)</label>
+                                    <input type="number" id="inp-delivery" value="64.5" min="0" max="100" step="0.1" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" oninput="updatePreview()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Dépenses Publicitaires (USD)</label>
+                                    <input type="number" id="inp-adspend" value="80.14" min="0" step="0.01" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" oninput="updatePreview()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">CPR — Coût par Résultat (USD)</label>
+                                    <input type="number" id="inp-cpr" value="1.29" min="0" step="0.01" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" oninput="updatePreview()">
+                                    <p class="text-xs text-slate-400 mt-1">Auto: Dépenses / Commandes</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Nombre de Clicks</label>
+                                    <input type="number" id="inp-clicks" value="2512" min="0" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" oninput="updatePreview()">
+                                    <p class="text-xs text-slate-400 mt-1">Pour calculer le RPC</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Prix de Vente Unitaire (USD)</label>
+                                    <input type="number" id="inp-price" value="9.72" min="0" step="0.01" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" oninput="updatePreview()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Coût Produit Unitaire (USD)</label>
+                                    <input type="number" id="inp-productcost" value="2.88" min="0" step="0.01" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" oninput="updatePreview()">
+                                </div>
+                            </div>
+                            <div class="mt-6 flex gap-3">
+                                <button onclick="saveEntry()" class="flex-1 bg-blue-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                                    <i class="fas fa-save"></i> Enregistrer l'Entrée
+                                </button>
+                                <button onclick="resetForm()" class="px-4 py-2.5 border border-slate-300 rounded-lg font-medium text-slate-600 hover:bg-slate-50 transition">
+                                    Réinitialiser
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Preview -->
+                    <div class="space-y-4">
+                        <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white">
+                            <h3 class="font-semibold mb-4 text-blue-100">Aperçu en Direct</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center py-2 border-b border-blue-500/30">
+                                    <span class="text-sm text-blue-100">Commandes Confirmées</span>
+                                    <span class="font-bold" id="prev-confirmed">43</span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-blue-500/30">
+                                    <span class="text-sm text-blue-100">Commandes Livrées</span>
+                                    <span class="font-bold text-green-300" id="prev-delivered">28</span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-blue-500/30">
+                                    <span class="text-sm text-blue-100">Revenus</span>
+                                    <span class="font-bold">$<span id="prev-revenue">602.64</span></span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-blue-500/30">
+                                    <span class="text-sm text-blue-100">Bénéfice Net</span>
+                                    <span class="font-bold text-green-300">$<span id="prev-profit">344.10</span></span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-blue-500/30">
+                                    <span class="text-sm text-blue-100">ROAS</span>
+                                    <span class="font-bold text-yellow-300"><span id="prev-roas">7.52</span>X</span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-blue-500/30">
+                                    <span class="text-sm text-blue-100">CPR CAP</span>
+                                    <span class="font-bold">$<span id="prev-cprcap">6.84</span></span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-blue-500/30">
+                                    <span class="text-sm text-blue-100">Break Even ROAS</span>
+                                    <span class="font-bold text-orange-300"><span id="prev-breakeven">1.42</span>X</span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-blue-500/30">
+                                    <span class="text-sm text-blue-100">Coût / Livrée</span>
+                                    <span class="font-bold">$<span id="prev-cpd">2.86</span></span>
+                                </div>
+                                <div class="flex justify-between items-center py-2">
+                                    <span class="text-sm text-blue-100">RPC</span>
+                                    <span class="font-bold">$<span id="prev-rpc">0.24</span></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl border border-slate-200 p-4">
+                            <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">En DZD</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Revenus</span>
+                                    <span class="font-bold text-slate-700"><span id="prev-rev-dzd">150,660</span> DZD</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Profit</span>
+                                    <span class="font-bold text-emerald-600"><span id="prev-prof-dzd">86,025</span> DZD</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Dépenses</span>
+                                    <span class="font-bold text-slate-700"><span id="prev-ad-dzd">20,035</span> DZD</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">CPR CAP</span>
+                                    <span class="font-bold text-slate-700"><span id="prev-cap-dzd">1,710</span> DZD</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Coût / Livrée</span>
+                                    <span class="font-bold text-slate-700"><span id="prev-cpd-dzd">715</span> DZD</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">RPC</span>
+                                    <span class="font-bold text-slate-700"><span id="prev-rpc-dzd">60</span> DZD</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HISTORY PAGE -->
+            <div id="page-history" class="hidden fade-in space-y-6">
+                <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <h3 class="font-semibold text-slate-700">Historique Complet</h3>
+                        <div class="flex gap-2">
+                            <input type="text" id="search-history" placeholder="Rechercher..." class="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" oninput="renderHistory()">
+                            <button onclick="clearAllData()" class="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100 transition">
+                                <i class="fas fa-trash"></i> Tout Supprimer
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 text-slate-500">
+                                <tr>
+                                    <th class="px-4 py-3 text-left font-medium">Date</th>
+                                    <th class="px-4 py-3 text-left font-medium">Campagne</th>
+                                    <th class="px-4 py-3 text-center font-medium">Cmd</th>
+                                    <th class="px-4 py-3 text-center font-medium">Livr</th>
+                                    <th class="px-4 py-3 text-right font-medium">Revenus</th>
+                                    <th class="px-4 py-3 text-right font-medium">Dépenses</th>
+                                    <th class="px-4 py-3 text-right font-medium">Profit</th>
+                                    <th class="px-4 py-3 text-center font-medium">ROAS</th>
+                                    <th class="px-4 py-3 text-center font-medium">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table" class="divide-y divide-slate-100">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ANALYTICS PAGE -->
+            <div id="page-analytics" class="hidden fade-in space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <h3 class="font-semibold text-slate-700 mb-4">Évolution Revenus vs Profit</h3>
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <h3 class="font-semibold text-slate-700 mb-4">ROAS & Break Even</h3>
+                        <canvas id="roasChart"></canvas>
+                    </div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <h3 class="font-semibold text-slate-700 mb-4">Commandes vs Livraisons</h3>
+                        <canvas id="ordersChart"></canvas>
+                    </div>
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <h3 class="font-semibold text-slate-700 mb-4">Répartition des Dépenses</h3>
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS PAGE -->
+            <div id="page-settings" class="hidden fade-in max-w-2xl">
+                <div class="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+                    <h3 class="font-semibold text-slate-700 flex items-center gap-2">
+                        <i class="fas fa-sliders-h text-blue-600"></i> Configuration
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Taux de Change (1 USD = ? DZD)</label>
+                            <input type="number" id="set-rate" value="250" min="1" step="1" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" onchange="saveSettings()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Nom de l'Entreprise</label>
+                            <input type="text" id="set-business" placeholder="Mon Business" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" onchange="saveSettings()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Prix de Vente par Défaut (USD)</label>
+                            <input type="number" id="set-price" value="9.72" min="0" step="0.01" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" onchange="saveSettings()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Coût Produit par Défaut (USD)</label>
+                            <input type="number" id="set-cost" value="2.88" min="0" step="0.01" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" onchange="saveSettings()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Taux de Confirmation par Défaut (%)</label>
+                            <input type="number" id="set-confirm" value="70" min="0" max="100" step="0.1" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" onchange="saveSettings()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Taux de Livraison par Défaut (%)</label>
+                            <input type="number" id="set-delivery" value="64.5" min="0" max="100" step="0.1" class="input-field w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" onchange="saveSettings()">
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-100">
+                        <h4 class="text-sm font-medium text-slate-700 mb-2">Formules Utilisées</h4>
+                        <div class="bg-slate-50 rounded-lg p-4 text-xs text-slate-600 space-y-1 font-mono">
+                            <p>• Commandes Livrées = Commandes × Confirmation% × Livraison%</p>
+                            <p>• Revenus = Commandes × Prix de Vente</p>
+                            <p>• Profit = Revenus − (Commandes × Coût Produit) − Dépenses Pub</p>
+                            <p>• CPR = Dépenses Pub / Commandes</p>
+                            <p>• CPR CAP = (Revenus / Commandes) − Coût Produit</p>
+                            <p>• Break Even ROAS = (Revenus / Commandes) / CPR CAP</p>
+                            <p>• Coût / Livrée = Dépenses Pub / Commandes Livrées</p>
+                            <p>• ROAS = Revenus / Dépenses Pub</p>
+                            <p>• RPC = Revenus / Nombre de Clicks</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-4 right-4 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-2">
+    <i class="fas fa-check-circle text-green-400"></i>
+    <span id="toast-msg">Opération réussie</span>
+</div>
+
+<script>
+// ==================== STATE ====================
+let entries = JSON.parse(localStorage.getItem('erp_entries') || '[]');
+let settings = JSON.parse(localStorage.getItem('erp_settings') || '{}');
+let charts = {};
+
+const defaultSettings = {
+    exchangeRate: 250,
+    businessName: '',
+    defaultPrice: 9.72,
+    defaultCost: 2.88,
+    defaultConfirmation: 70,
+    defaultDelivery: 64.5
+};
+
+// Merge with defaults
+settings = { ...defaultSettings, ...settings };
+
+// ==================== CALCULATION ENGINE ====================
+function calculateMetrics(data) {
+    const rate = settings.exchangeRate || 250;
+    const orders = parseFloat(data.orders) || 0;
+    const confirmationRate = parseFloat(data.confirmationRate) || 0;
+    const deliveryRate = parseFloat(data.deliveryRate) || 0;
+    const adSpend = parseFloat(data.adSpend) || 0;
+    const cpr = parseFloat(data.cpr) || 0;
+    const clicks = parseFloat(data.clicks) || 0;
+    const sellingPrice = parseFloat(data.sellingPrice) || 0;
+    const productCost = parseFloat(data.productCost) || 0;
+
+    const confirmed = orders * (confirmationRate / 100);
+    const delivered = confirmed * (deliveryRate / 100);
+
+    const revenue = orders * sellingPrice;
+    const totalProductCost = orders * productCost;
+    const profit = revenue - totalProductCost - adSpend;
+
+    const cprCalc = orders > 0 ? adSpend / orders : 0;
+    const costPerDelivered = delivered > 0 ? adSpend / delivered : 0;
+    const roas = adSpend > 0 ? revenue / adSpend : 0;
+
+    const aov = orders > 0 ? revenue / orders : 0;
+    const productCostPerOrder = orders > 0 ? totalProductCost / orders : 0;
+    const cprCap = aov - productCostPerOrder;
+    const breakEvenRoas = cprCap > 0 ? aov / cprCap : 0;
+
+    const rpc = clicks > 0 ? revenue / clicks : 0;
+    const cpc = clicks > 0 ? adSpend / clicks : 0;
+
+    return {
+        orders, confirmed, delivered, revenue, profit, totalProductCost,
+        adSpend, cpr, cprCalc, costPerDelivered, roas, aov, 
+        productCostPerOrder, cprCap, breakEvenRoas, rpc, cpc, clicks,
+        revenueDZD: revenue * rate,
+        profitDZD: profit * rate,
+        adSpendDZD: adSpend * rate,
+        cprDZD: cpr * rate,
+        cprCapDZD: cprCap * rate,
+        costPerDeliveredDZD: costPerDelivered * rate,
+        rpcDZD: rpc * rate,
+        cpcDZD: cpc * rate,
+        rate
+    };
+}
+
+// ==================== UI HELPERS ====================
+function formatNum(num, decimals = 2) {
+    if (isNaN(num) || !isFinite(num)) return '0';
+    return num.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    toast.classList.remove('translate-y-20', 'opacity-0');
+    setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+}
+
+function showPage(page) {
+    document.querySelectorAll('[id^="page-"]').forEach(el => el.classList.add('hidden'));
+    document.getElementById('page-' + page).classList.remove('hidden');
+    document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+    document.getElementById('nav-' + page).classList.add('active');
+
+    const titles = {
+        dashboard: ['Tableau de Bord', 'Vue d'ensemble de votre business'],
+        entry: ['Nouvelle Entrée', 'Ajouter une nouvelle campagne ou journée'],
+        history: ['Historique', 'Toutes vos entrées passées'],
+        analytics: ['Analytiques', 'Graphiques et tendances'],
+        settings: ['Paramètres', 'Configuration du système']
+    };
+    document.getElementById('page-title').textContent = titles[page][0];
+    document.getElementById('page-subtitle').textContent = titles[page][1];
+
+    if (page === 'dashboard') updateDashboard();
+    if (page === 'history') renderHistory();
+    if (page === 'analytics') renderAnalytics();
+    if (page === 'settings') loadSettings();
+}
+
+// ==================== PREVIEW ====================
+function updatePreview() {
+    const data = {
+        orders: document.getElementById('inp-orders').value,
+        confirmationRate: document.getElementById('inp-confirmation').value,
+        deliveryRate: document.getElementById('inp-delivery').value,
+        adSpend: document.getElementById('inp-adspend').value,
+        cpr: document.getElementById('inp-cpr').value,
+        clicks: document.getElementById('inp-clicks').value,
+        sellingPrice: document.getElementById('inp-price').value,
+        productCost: document.getElementById('inp-productcost').value
+    };
+
+    const m = calculateMetrics(data);
+
+    document.getElementById('prev-confirmed').textContent = formatNum(m.confirmed, 1);
+    document.getElementById('prev-delivered').textContent = formatNum(m.delivered, 1);
+    document.getElementById('prev-revenue').textContent = formatNum(m.revenue, 2);
+    document.getElementById('prev-profit').textContent = formatNum(m.profit, 2);
+    document.getElementById('prev-roas').textContent = formatNum(m.roas, 2);
+    document.getElementById('prev-cprcap').textContent = formatNum(m.cprCap, 2);
+    document.getElementById('prev-breakeven').textContent = formatNum(m.breakEvenRoas, 2);
+    document.getElementById('prev-cpd').textContent = formatNum(m.costPerDelivered, 2);
+    document.getElementById('prev-rpc').textContent = formatNum(m.rpc, 2);
+
+    document.getElementById('prev-rev-dzd').textContent = formatNum(m.revenueDZD, 0);
+    document.getElementById('prev-prof-dzd').textContent = formatNum(m.profitDZD, 0);
+    document.getElementById('prev-ad-dzd').textContent = formatNum(m.adSpendDZD, 0);
+    document.getElementById('prev-cap-dzd').textContent = formatNum(m.cprCapDZD, 0);
+    document.getElementById('prev-cpd-dzd').textContent = formatNum(m.costPerDeliveredDZD, 2);
+    document.getElementById('prev-rpc-dzd').textContent = formatNum(m.rpcDZD, 2);
+
+    // Auto-calculate CPR from ad spend / orders
+    const autoCpr = data.orders > 0 ? data.adSpend / data.orders : 0;
+    if (Math.abs(autoCpr - parseFloat(data.cpr || 0)) > 0.01) {
+        // User modified CPR manually, keep it
+    }
+}
+
+// ==================== SAVE / LOAD ====================
+function saveEntry() {
+    const date = document.getElementById('inp-date').value || new Date().toISOString().split('T')[0];
+    const data = {
+        id: Date.now(),
+        date,
+        campaign: document.getElementById('inp-campaign').value || 'Sans nom',
+        orders: parseFloat(document.getElementById('inp-orders').value) || 0,
+        confirmationRate: parseFloat(document.getElementById('inp-confirmation').value) || 0,
+        deliveryRate: parseFloat(document.getElementById('inp-delivery').value) || 0,
+        adSpend: parseFloat(document.getElementById('inp-adspend').value) || 0,
+        cpr: parseFloat(document.getElementById('inp-cpr').value) || 0,
+        clicks: parseFloat(document.getElementById('inp-clicks').value) || 0,
+        sellingPrice: parseFloat(document.getElementById('inp-price').value) || 0,
+        productCost: parseFloat(document.getElementById('inp-productcost').value) || 0
+    };
+
+    if (data.orders <= 0) {
+        showToast('Veuillez entrer un nombre de commandes');
+        return;
+    }
+
+    entries.unshift(data);
+    localStorage.setItem('erp_entries', JSON.stringify(entries));
+    showToast('Entrée enregistrée avec succès !');
+    resetForm();
+    updateDashboard();
+}
+
+function deleteEntry(id) {
+    entries = entries.filter(e => e.id !== id);
+    localStorage.setItem('erp_entries', JSON.stringify(entries));
+    renderHistory();
+    updateDashboard();
+    showToast('Entrée supprimée');
+}
+
+function resetForm() {
+    document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('inp-campaign').value = '';
+    document.getElementById('inp-orders').value = settings.defaultPrice ? 62 : '';
+    document.getElementById('inp-confirmation').value = settings.defaultConfirmation;
+    document.getElementById('inp-delivery').value = settings.defaultDelivery;
+    document.getElementById('inp-adspend').value = '';
+    document.getElementById('inp-cpr').value = '';
+    document.getElementById('inp-clicks').value = '';
+    document.getElementById('inp-price').value = settings.defaultPrice;
+    document.getElementById('inp-productcost').value = settings.defaultCost;
+    updatePreview();
+}
+
+function clearAllData() {
+    if (confirm('Êtes-vous sûr de vouloir supprimer TOUTES les entrées ? Cette action est irréversible.')) {
+        entries = [];
+        localStorage.removeItem('erp_entries');
+        renderHistory();
+        updateDashboard();
+        showToast('Toutes les données ont été supprimées');
+    }
+}
+
+// ==================== DASHBOARD ====================
+function updateDashboard() {
+    if (entries.length === 0) {
+        document.getElementById('dash-orders').textContent = '0';
+        document.getElementById('dash-delivered').textContent = '0';
+        document.getElementById('dash-revenue').textContent = '0';
+        document.getElementById('dash-revenue-dzd').textContent = '0';
+        document.getElementById('dash-profit').textContent = '0';
+        document.getElementById('dash-profit-dzd').textContent = '0';
+        document.getElementById('dash-roas').textContent = '0';
+        document.getElementById('dash-breakeven').textContent = '0';
+        document.getElementById('dash-adspend').textContent = '0';
+        document.getElementById('dash-cpr').textContent = '0';
+        document.getElementById('dash-cprcap').textContent = '0';
+        document.getElementById('dash-cpd').textContent = '0';
+        document.getElementById('dash-clicks').textContent = '0';
+        document.getElementById('dash-rpc').textContent = '0';
+        document.getElementById('dash-cpc').textContent = '0';
+        document.getElementById('dash-drate').textContent = '0';
+        document.getElementById('recent-table').innerHTML = '<tr><td colspan="7" class="px-6 py-8 text-center text-slate-400">Aucune entrée pour le moment</td></tr>';
+        return;
+    }
+
+    const latest = entries[0];
+    const m = calculateMetrics(latest);
+
+    document.getElementById('dash-orders').textContent = formatNum(m.orders, 0);
+    document.getElementById('dash-delivered').textContent = formatNum(m.delivered, 0);
+    document.getElementById('dash-revenue').textContent = formatNum(m.revenue, 2);
+    document.getElementById('dash-revenue-dzd').textContent = formatNum(m.revenueDZD, 0) + ' DZD';
+    document.getElementById('dash-profit').textContent = formatNum(m.profit, 2);
+    document.getElementById('dash-profit-dzd').textContent = formatNum(m.profitDZD, 0) + ' DZD';
+    document.getElementById('dash-roas').textContent = formatNum(m.roas, 2);
+    document.getElementById('dash-breakeven').textContent = formatNum(m.breakEvenRoas, 2);
+    document.getElementById('dash-adspend').textContent = formatNum(m.adSpend, 2);
+    document.getElementById('dash-cpr').textContent = formatNum(m.cpr, 2);
+    document.getElementById('dash-cprcap').textContent = formatNum(m.cprCap, 2);
+    document.getElementById('dash-cpd').textContent = formatNum(m.costPerDelivered, 2);
+    document.getElementById('dash-clicks').textContent = formatNum(m.clicks, 0);
+    document.getElementById('dash-rpc').textContent = formatNum(m.rpc, 2);
+    document.getElementById('dash-cpc').textContent = formatNum(m.cpc, 3);
+    document.getElementById('dash-drate').textContent = formatNum((m.delivered / m.orders * 100) || 0, 1);
+
+    // Recent table
+    const recent = entries.slice(0, 5);
+    document.getElementById('recent-table').innerHTML = recent.map(e => {
+        const em = calculateMetrics(e);
+        return `<tr class="hover:bg-slate-50">
+            <td class="px-6 py-3">${e.date}</td>
+            <td class="px-6 py-3">${e.campaign}</td>
+            <td class="px-6 py-3">${formatNum(em.orders, 0)}</td>
+            <td class="px-6 py-3 text-green-600">${formatNum(em.delivered, 0)}</td>
+            <td class="px-6 py-3 font-medium">$${formatNum(em.revenue, 2)}</td>
+            <td class="px-6 py-3 text-red-500">$${formatNum(em.adSpend, 2)}</td>
+            <td class="px-6 py-3 font-bold ${em.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}">$${formatNum(em.profit, 2)}</td>
+            <td class="px-6 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium ${em.roas >= em.breakEvenRoas ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${formatNum(em.roas, 2)}X</span></td>
+        </tr>`;
+    }).join('');
+
+    // Cost chart
+    const ctx = document.getElementById('costChart');
+    if (charts.cost) charts.cost.destroy();
+    charts.cost = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Bénéfice Net', 'Coût Produit', 'Dépenses Pub'],
+            datasets: [{
+                data: [Math.max(m.profit, 0), m.totalProductCost, m.adSpend],
+                backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+        }
+    });
+}
+
+// ==================== HISTORY ====================
+function renderHistory() {
+    const search = document.getElementById('search-history').value.toLowerCase();
+    const filtered = entries.filter(e => 
+        e.campaign.toLowerCase().includes(search) || 
+        e.date.includes(search)
+    );
+
+    const tbody = document.getElementById('history-table');
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">Aucune entrée trouvée</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(e => {
+        const em = calculateMetrics(e);
+        return `<tr class="hover:bg-slate-50 border-b border-slate-50">
+            <td class="px-4 py-3 text-slate-700">${e.date}</td>
+            <td class="px-4 py-3 text-slate-700">${e.campaign}</td>
+            <td class="px-4 py-3 text-center">${formatNum(em.orders, 0)}</td>
+            <td class="px-4 py-3 text-center text-green-600">${formatNum(em.delivered, 0)}</td>
+            <td class="px-4 py-3 text-right font-medium">$${formatNum(em.revenue, 2)}</td>
+            <td class="px-4 py-3 text-right text-red-500">$${formatNum(em.adSpend, 2)}</td>
+            <td class="px-4 py-3 text-right font-bold ${em.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}">$${formatNum(em.profit, 2)}</td>
+            <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded-full text-xs font-medium ${em.roas >= em.breakEvenRoas ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${formatNum(em.roas, 2)}X</span></td>
+            <td class="px-4 py-3 text-center">
+                <button onclick="deleteEntry(${e.id})" class="text-red-500 hover:text-red-700 transition"><i class="fas fa-trash-alt"></i></button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+// ==================== ANALYTICS ====================
+function renderAnalytics() {
+    if (entries.length < 2) {
+        document.getElementById('revenueChart').parentElement.innerHTML = '<h3 class="font-semibold text-slate-700 mb-4">Évolution Revenus vs Profit</h3><p class="text-slate-400 text-center py-8">Ajoutez au moins 2 entrées pour voir les graphiques</p>';
+        return;
+    }
+
+    const sorted = [...entries].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const labels = sorted.map(e => e.date.slice(5));
+
+    const revenues = sorted.map(e => calculateMetrics(e).revenue);
+    const profits = sorted.map(e => calculateMetrics(e).profit);
+    const roasData = sorted.map(e => calculateMetrics(e).roas);
+    const beData = sorted.map(e => calculateMetrics(e).breakEvenRoas);
+    const ordersData = sorted.map(e => calculateMetrics(e).orders);
+    const delData = sorted.map(e => calculateMetrics(e).delivered);
+    const adSpends = sorted.map(e => calculateMetrics(e).adSpend);
+    const prodCosts = sorted.map(e => calculateMetrics(e).totalProductCost);
+
+    if (charts.rev) charts.rev.destroy();
+    if (charts.roas) charts.roas.destroy();
+    if (charts.ord) charts.ord.destroy();
+    if (charts.exp) charts.exp.destroy();
+
+    charts.rev = new Chart(document.getElementById('revenueChart'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Revenus', data: revenues, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.4 },
+                { label: 'Profit', data: profits, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4 }
+            ]
+        },
+        options: { responsive: true, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    charts.roas = new Chart(document.getElementById('roasChart'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'ROAS', data: roasData, borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.1)', fill: true, tension: 0.4 },
+                { label: 'Break Even', data: beData, borderColor: '#f97316', borderDash: [5,5], tension: 0.4 }
+            ]
+        },
+        options: { responsive: true, interaction: { intersect: false, mode: 'index' }, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    charts.ord = new Chart(document.getElementById('ordersChart'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Commandes', data: ordersData, backgroundColor: '#3b82f6', borderRadius: 4 },
+                { label: 'Livrées', data: delData, backgroundColor: '#10b981', borderRadius: 4 }
+            ]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: false }, y: { stacked: false } } }
+    });
+
+    charts.exp = new Chart(document.getElementById('expenseChart'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Dépenses Pub', data: adSpends, backgroundColor: '#ef4444', borderRadius: 4 },
+                { label: 'Coût Produit', data: prodCosts, backgroundColor: '#f59e0b', borderRadius: 4 }
+            ]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: { stacked: true } } }
+    });
+}
+
+// ==================== SETTINGS ====================
+function loadSettings() {
+    document.getElementById('set-rate').value = settings.exchangeRate;
+    document.getElementById('set-business').value = settings.businessName;
+    document.getElementById('set-price').value = settings.defaultPrice;
+    document.getElementById('set-cost').value = settings.defaultCost;
+    document.getElementById('set-confirm').value = settings.defaultConfirmation;
+    document.getElementById('set-delivery').value = settings.defaultDelivery;
+    document.getElementById('sidebar-rate').textContent = settings.exchangeRate;
+}
+
+function saveSettings() {
+    settings = {
+        exchangeRate: parseFloat(document.getElementById('set-rate').value) || 250,
+        businessName: document.getElementById('set-business').value,
+        defaultPrice: parseFloat(document.getElementById('set-price').value) || 0,
+        defaultCost: parseFloat(document.getElementById('set-cost').value) || 0,
+        defaultConfirmation: parseFloat(document.getElementById('set-confirm').value) || 70,
+        defaultDelivery: parseFloat(document.getElementById('set-delivery').value) || 65
+    };
+    localStorage.setItem('erp_settings', JSON.stringify(settings));
+    document.getElementById('sidebar-rate').textContent = settings.exchangeRate;
+    showToast('Paramètres sauvegardés');
+}
+
+// ==================== EXPORT ====================
+function exportCSV() {
+    if (entries.length === 0) { showToast('Aucune donnée à exporter'); return; }
+
+    let csv = 'Date,Campagne,Commandes,Confirmées,Livrées,Revenus_USD,Revenus_DZD,Dépenses_USD,Dépenses_DZD,Profit_USD,Profit_DZD,ROAS,CPR_CAP,BreakEven_ROAS,Cout_Livree_USD,Cout_Livree_DZD,RPC_USD,RPC_DZD\n';
+
+    entries.forEach(e => {
+        const m = calculateMetrics(e);
+        csv += `${e.date},${e.campaign},${m.orders},${formatNum(m.confirmed,1)},${formatNum(m.delivered,1)},${formatNum(m.revenue,2)},${formatNum(m.revenueDZD,2)},${formatNum(m.adSpend,2)},${formatNum(m.adSpendDZD,2)},${formatNum(m.profit,2)},${formatNum(m.profitDZD,2)},${formatNum(m.roas,2)},${formatNum(m.cprCap,2)},${formatNum(m.breakEvenRoas,2)},${formatNum(m.costPerDelivered,2)},${formatNum(m.costPerDeliveredDZD,2)},${formatNum(m.rpc,2)},${formatNum(m.rpcDZD,2)}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'erp_ecommerce_data.csv';
+    link.click();
+    showToast('Export CSV téléchargé');
+}
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+    loadSettings();
+    updatePreview();
+    updateDashboard();
+
+    // Auto-calculate CPR when orders or adspend changes
+    document.getElementById('inp-orders').addEventListener('input', autoCPR);
+    document.getElementById('inp-adspend').addEventListener('input', autoCPR);
+});
+
+function autoCPR() {
+    const orders = parseFloat(document.getElementById('inp-orders').value) || 0;
+    const adSpend = parseFloat(document.getElementById('inp-adspend').value) || 0;
+    if (orders > 0) {
+        document.getElementById('inp-cpr').value = (adSpend / orders).toFixed(2);
+    }
+    updatePreview();
+}
+</script>
+
+</body>
+</html>
