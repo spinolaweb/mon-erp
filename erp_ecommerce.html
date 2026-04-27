@@ -10,7 +10,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        .sidebar-link { transition: all 0.2s; }
+        .sidebar-link { transition: all 0.2s; appearance: none; }
         .sidebar-link:hover, .sidebar-link.active { background: rgba(59,130,246,0.1); color: #2563eb; border-right: 3px solid #2563eb; }
         .kpi-card { transition: transform 0.2s, box-shadow 0.2s; }
         .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
@@ -45,21 +45,21 @@
         </div>
 
         <nav class="flex-1 py-4 space-y-1">
-            <a href="javascript:void(0)" onclick="showPage('dashboard')" id="nav-dashboard" class="sidebar-link active flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600">
+            <button onclick="showPage('dashboard')" id="nav-dashboard" class="sidebar-link active w-full text-left flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600 bg-transparent border-0 cursor-pointer">
                 <i class="fas fa-home w-5"></i> Tableau de Bord
-            </a>
-            <a href="javascript:void(0)" onclick="showPage('entry')" id="nav-entry" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600">
+            </button>
+            <button onclick="showPage('entry')" id="nav-entry" class="sidebar-link w-full text-left flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600 bg-transparent border-0 cursor-pointer">
                 <i class="fas fa-plus-circle w-5"></i> Nouvelle Entrée
-            </a>
-            <a href="javascript:void(0)" onclick="showPage('history')" id="nav-history" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600">
+            </button>
+            <button onclick="showPage('history')" id="nav-history" class="sidebar-link w-full text-left flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600 bg-transparent border-0 cursor-pointer">
                 <i class="fas fa-history w-5"></i> Historique
-            </a>
-            <a href="javascript:void(0)" onclick="showPage('analytics')" id="nav-analytics" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600">
+            </button>
+            <button onclick="showPage('analytics')" id="nav-analytics" class="sidebar-link w-full text-left flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600 bg-transparent border-0 cursor-pointer">
                 <i class="fas fa-chart-bar w-5"></i> Analytiques
-            </a>
-            <a href="javascript:void(0)" onclick="showPage('settings')" id="nav-settings" class="sidebar-link flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600">
+            </button>
+            <button onclick="showPage('settings')" id="nav-settings" class="sidebar-link w-full text-left flex items-center gap-3 px-6 py-3 text-sm font-medium text-slate-600 bg-transparent border-0 cursor-pointer">
                 <i class="fas fa-cog w-5"></i> Paramètres
-            </a>
+            </button>
         </nav>
 
         <div class="p-4 border-t border-slate-100">
@@ -196,7 +196,7 @@
                 <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
                     <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                         <h3 class="font-semibold text-slate-700">Entrées Récentes</h3>
-                        <button href="javascript:void(0)" onclick="showPage('history')" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Voir tout</button>
+                        <button onclick="showPage('history')" class="text-sm text-blue-600 hover:text-blue-700 font-medium bg-transparent border-0 cursor-pointer">Voir tout</button>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
