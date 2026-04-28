@@ -68,7 +68,7 @@ app.post('/api/settings', (req, res) => {
 app.get('/api/export', (req, res) => {
     const db = readDB();
     const rate = db.settings.exchangeRate || 250;
-    let csv = 'Date,Campagne,Commandes,Livrees,Revenus_USD,Revenus_DZD,Depenses_USD,Depenses_DZD,Profit_USD,Profit_DZD,Profit_Unit_USD,Profit_Unit_DZD,ROAS,CPR_CAP,BreakEven_ROAS,Cout_Livree_USD,Cout_Livree_DZD,RPC_USD,RPC_DZD\n';
+    let csv = 'Date,Campagne,Commandes,Confirmes,Livrees,Revenus_USD,Revenus_DZD,Depenses_USD,Depenses_DZD,Profit_USD,Profit_DZD,Profit_Unit_USD,Profit_Unit_DZD,ROAS,CPR_CAP,BreakEven_ROAS,Cout_Livree_USD,Cout_Livree_DZD,RPC_USD,RPC_DZD\n';
 
     db.entries.forEach(e => {
         const orders = parseFloat(e.orders) || 0;
@@ -83,29 +83,28 @@ app.get('/api/export', (req, res) => {
 
         const confirmed = orders * (confirmationRate / 100);
         const delivered = confirmed * (deliveryRate / 100);
-        const revenue = orders * sellingPrice;
-        const revenueDZD = orders * sellingPriceDZD;
         
-        // NEW FORMULA: Profit = Revenue - (Delivered × ProductCost) - (CostPerDelivered)
-        const totalProductCostDelivered = delivered * productCost;
-        const totalProductCostDeliveredDZD = delivered * productCostDZD;
-        const costPerDelivered = delivered > 0 ? adSpend / delivered : 0;
-        const costPerDeliveredDZD = costPerDelivered * rate;
+        // COD: Revenue only from DELIVERED orders
+        const revenue = delivered * sellingPrice;
+        const revenueDZD = delivered * sellingPriceDZD;
         
-        const profit = revenue - totalProductCostDelivered - costPerDelivered;
-        const profitDZD = revenueDZD - totalProductCostDeliveredDZD - costPerDeliveredDZD;
+        // COD: Product cost only for DELIVERED orders
+        const productCostDelivered = delivered * productCost;
+        const productCostDeliveredDZD = delivered * productCostDZD;
+        
+        // PROFIT = Revenue(Livré) - CoûtProduit(Livré) - DépensesPub(TOTALES)
+        const profit = revenue - productCostDelivered - adSpend;
+        const profitDZD = revenueDZD - productCostDeliveredDZD - (adSpend * rate);
         const profitPerUnit = delivered > 0 ? profit / delivered : 0;
         
         const roas = adSpend > 0 ? revenue / adSpend : 0;
-        const aov = orders > 0 ? revenue / orders : 0;
-        const aovDZD = orders > 0 ? revenueDZD / orders : 0;
-        const productCostPerOrder = orders > 0 ? (orders * productCost) / orders : 0;
-        const cprCap = aov - productCostPerOrder;
-        const cprCapDZD = aovDZD - (orders > 0 ? (orders * productCostDZD) / orders : 0);
+        const aov = delivered > 0 ? revenue / delivered : 0;
+        const cprCap = aov - productCost;
         const breakEvenRoas = cprCap > 0 ? aov / cprCap : 0;
+        const costPerDelivered = delivered > 0 ? adSpend / delivered : 0;
         const rpc = clicks > 0 ? revenue / clicks : 0;
 
-        csv += `${e.date},${e.campaign},${orders},${delivered.toFixed(1)},${revenue.toFixed(2)},${revenueDZD.toFixed(2)},${adSpend.toFixed(2)},${(adSpend*rate).toFixed(2)},${profit.toFixed(2)},${profitDZD.toFixed(2)},${profitPerUnit.toFixed(2)},${(profitPerUnit*rate).toFixed(2)},${roas.toFixed(2)},${cprCap.toFixed(2)},${breakEvenRoas.toFixed(2)},${costPerDelivered.toFixed(2)},${costPerDeliveredDZD.toFixed(2)},${rpc.toFixed(2)},${(rpc*rate).toFixed(2)}\n`;
+        csv += `${e.date},${e.campaign},${orders},${confirmed.toFixed(1)},${delivered.toFixed(1)},${revenue.toFixed(2)},${revenueDZD.toFixed(2)},${adSpend.toFixed(2)},${(adSpend*rate).toFixed(2)},${profit.toFixed(2)},${profitDZD.toFixed(2)},${profitPerUnit.toFixed(2)},${(profitPerUnit*rate).toFixed(2)},${roas.toFixed(2)},${cprCap.toFixed(2)},${breakEvenRoas.toFixed(2)},${costPerDelivered.toFixed(2)},${(costPerDelivered*rate).toFixed(2)},${rpc.toFixed(2)},${(rpc*rate).toFixed(2)}\n`;
     });
 
     res.setHeader('Content-Type', 'text/csv');
