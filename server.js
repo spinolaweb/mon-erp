@@ -79,24 +79,33 @@ app.get('/api/export', (req, res) => {
         const productCostDZD = parseFloat(e.productCostDZD) || 0;
         const sellingPrice = sellingPriceDZD / rate;
         const productCost = productCostDZD / rate;
-        
+        const clicks = parseFloat(e.clicks) || 0;
+
         const confirmed = orders * (confirmationRate / 100);
         const delivered = confirmed * (deliveryRate / 100);
         const revenue = orders * sellingPrice;
+        const revenueDZD = orders * sellingPriceDZD;
         
         // NEW FORMULA: Profit = Revenue - (Delivered × ProductCost) - (CostPerDelivered)
         const totalProductCostDelivered = delivered * productCost;
+        const totalProductCostDeliveredDZD = delivered * productCostDZD;
         const costPerDelivered = delivered > 0 ? adSpend / delivered : 0;
+        const costPerDeliveredDZD = costPerDelivered * rate;
+        
         const profit = revenue - totalProductCostDelivered - costPerDelivered;
+        const profitDZD = revenueDZD - totalProductCostDeliveredDZD - costPerDeliveredDZD;
+        const profitPerUnit = delivered > 0 ? profit / delivered : 0;
+        
         const roas = adSpend > 0 ? revenue / adSpend : 0;
         const aov = orders > 0 ? revenue / orders : 0;
-        const cprCap = aov - (orders > 0 ? totalProductCost / orders : 0);
+        const aovDZD = orders > 0 ? revenueDZD / orders : 0;
+        const productCostPerOrder = orders > 0 ? (orders * productCost) / orders : 0;
+        const cprCap = aov - productCostPerOrder;
+        const cprCapDZD = aovDZD - (orders > 0 ? (orders * productCostDZD) / orders : 0);
         const breakEvenRoas = cprCap > 0 ? aov / cprCap : 0;
-        const costPerDelivered = delivered > 0 ? adSpend / delivered : 0;
         const rpc = clicks > 0 ? revenue / clicks : 0;
 
-        const profitPerUnit = orders > 0 ? profit / orders : 0;
-        csv += `${e.date},${e.campaign},${orders},${delivered.toFixed(1)},${revenue.toFixed(2)},${(revenue*rate).toFixed(2)},${adSpend.toFixed(2)},${(adSpend*rate).toFixed(2)},${profit.toFixed(2)},${(profit*rate).toFixed(2)},${profitPerUnit.toFixed(2)},${(profitPerUnit*rate).toFixed(2)},${roas.toFixed(2)},${cprCap.toFixed(2)},${breakEvenRoas.toFixed(2)},${costPerDelivered.toFixed(2)},${(costPerDelivered*rate).toFixed(2)},${rpc.toFixed(2)},${(rpc*rate).toFixed(2)}\n`;
+        csv += `${e.date},${e.campaign},${orders},${delivered.toFixed(1)},${revenue.toFixed(2)},${revenueDZD.toFixed(2)},${adSpend.toFixed(2)},${(adSpend*rate).toFixed(2)},${profit.toFixed(2)},${profitDZD.toFixed(2)},${profitPerUnit.toFixed(2)},${(profitPerUnit*rate).toFixed(2)},${roas.toFixed(2)},${cprCap.toFixed(2)},${breakEvenRoas.toFixed(2)},${costPerDelivered.toFixed(2)},${costPerDeliveredDZD.toFixed(2)},${rpc.toFixed(2)},${(rpc*rate).toFixed(2)}\n`;
     });
 
     res.setHeader('Content-Type', 'text/csv');
