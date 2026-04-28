@@ -79,13 +79,15 @@ app.get('/api/export', (req, res) => {
         const productCostDZD = parseFloat(e.productCostDZD) || 0;
         const sellingPrice = sellingPriceDZD / rate;
         const productCost = productCostDZD / rate;
-        const clicks = parseFloat(e.clicks) || 0;
-
+        
         const confirmed = orders * (confirmationRate / 100);
         const delivered = confirmed * (deliveryRate / 100);
         const revenue = orders * sellingPrice;
-        const totalProductCost = orders * productCost;
-        const profit = revenue - totalProductCost - adSpend;
+        
+        // NEW FORMULA: Profit = Revenue - (Delivered × ProductCost) - (CostPerDelivered)
+        const totalProductCostDelivered = delivered * productCost;
+        const costPerDelivered = delivered > 0 ? adSpend / delivered : 0;
+        const profit = revenue - totalProductCostDelivered - costPerDelivered;
         const roas = adSpend > 0 ? revenue / adSpend : 0;
         const aov = orders > 0 ? revenue / orders : 0;
         const cprCap = aov - (orders > 0 ? totalProductCost / orders : 0);
