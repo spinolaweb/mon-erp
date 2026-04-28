@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paramètres — ERP E-Commerce Pro</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+<div class="brand">
+<div class="brand-icon"><i class="fas fa-chart-line"></i></div>
+<div><div class="brand-title">ERP E-Commerce</div><div class="brand-sub">Profit Calculator</div></div>
+</div>
+<nav class="nav">
+<a href="index.html" class="nav-item"><i class="fas fa-home nav-icon"></i> Tableau de Bord</a>
+<a href="entry.html" class="nav-item"><i class="fas fa-plus-circle nav-icon"></i> Nouvelle Entrée</a>
+<a href="history.html" class="nav-item"><i class="fas fa-history nav-icon"></i> Historique</a>
+<a href="analytics.html" class="nav-item"><i class="fas fa-chart-bar nav-icon"></i> Analytiques</a>
+<a href="settings.html" class="nav-item active"><i class="fas fa-cog nav-icon"></i> Paramètres</a>
+</nav>
+<div class="rate-badge">
+<p>Taux de Change</p>
+<h4>1 USD = <span id="sidebar-rate">250</span> DZD</h4>
+</div>
+</aside>
+<main class="main">
+<header class="header">
+<div class="page-title">
+<h1>Paramètres</h1>
+<p>Configuration du système et formules</p>
+</div>
+<div class="header-actions">
+<a href="/api/export" onclick="event.preventDefault(); API.exportCSV();" class="btn btn-outline btn-sm"><i class="fas fa-download"></i> Exporter CSV</a>
+<div id="conn-status" class="status status-online"><span class="status-dot"></span> Backend Online</div>
+</div>
+</header>
+<div class="content fade-in" style="max-width:800px;">
+<div class="card" style="margin-bottom:24px;">
+<div class="card-header"><h3 class="card-title"><i class="fas fa-sliders-h" style="color:var(--primary);margin-right:8px;"></i>Configuration Générale</h3></div>
+<div class="form-grid">
+<div class="form-group">
+<label class="form-label">Taux de Change (1 USD = ? DZD)</label>
+<input type="number" id="set-rate" value="250" min="1" class="form-input" onchange="saveSettings()">
+</div>
+<div class="form-group">
+<label class="form-label">Nom de l'Entreprise</label>
+<input type="text" id="set-business" placeholder="Mon Business" class="form-input" onchange="saveSettings()">
+</div>
+<div class="form-group">
+<label class="form-label">Prix de Vente par Défaut (DZD)</label>
+<input type="number" id="set-price" value="2430" min="0" step="0.01" class="form-input" onchange="saveSettings()">
+</div>
+<div class="form-group">
+<label class="form-label">Coût Produit par Défaut (DZD)</label>
+<input type="number" id="set-cost" value="720" min="0" step="0.01" class="form-input" onchange="saveSettings()">
+</div>
+<div class="form-group">
+<label class="form-label">Taux de Confirmation par Défaut (%)</label>
+<input type="number" id="set-confirm" value="70" min="0" max="100" step="0.1" class="form-input" onchange="saveSettings()">
+</div>
+<div class="form-group">
+<label class="form-label">Taux de Livraison par Défaut (%)</label>
+<input type="number" id="set-delivery" value="64.5" min="0" max="100" step="0.1" class="form-input" onchange="saveSettings()">
+</div>
+</div>
+</div>
+
+<div class="card">
+<div class="card-header"><h3 class="card-title">Formules Utilisées</h3></div>
+<div style="background:#f8fafc;border-radius:8px;padding:20px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:13px;color:#475569;line-height:2;">
+<p><strong style="color:#1e293b;">Commandes Livrées</strong> = Commandes × Confirmation% × Livraison%</p>
+<p><strong style="color:#1e293b;">Revenus</strong> = Commandes × Prix de Vente</p>
+<p><strong style="color:#1e293b;">Profit</strong> = Revenus − (Commandes × Coût Produit) − Dépenses Pub</p>
+<p><strong style="color:#1e293b;">CPR</strong> = Dépenses Pub / Commandes</p>
+<p><strong style="color:#1e293b;">CPR CAP</strong> = (Revenus / Commandes) − Coût Produit</p>
+<p><strong style="color:#1e293b;">Break Even ROAS</strong> = (Revenus / Commandes) / CPR CAP</p>
+<p><strong style="color:#1e293b;">Coût / Livrée</strong> = Dépenses Pub / Commandes Livrées</p>
+<p><strong style="color:#1e293b;">ROAS</strong> = Revenus / Dépenses Pub</p>
+<p><strong style="color:#1e293b;">Profit / Unité</strong> = Profit / Commandes</p>
+<p><strong style="color:#1e293b;">RPC</strong> = Revenus / Nombre de Clicks</p>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script src="/js/calculator.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/ui.js"></script>
+
+<script>
+async function loadSettings() {
+    const settings = await UI.loadSettings();
+    document.getElementById('set-rate').value = settings.exchangeRate;
+    document.getElementById('set-business').value = settings.businessName || '';
+    document.getElementById('set-price').value = settings.defaultPrice;
+    document.getElementById('set-cost').value = settings.defaultCost;
+    document.getElementById('set-confirm').value = settings.defaultConfirmation;
+    document.getElementById('set-delivery').value = settings.defaultDelivery;
+}
+
+async function saveSettings() {
+    const settings = {
+        exchangeRate: parseFloat(document.getElementById('set-rate').value) || 250,
+        businessName: document.getElementById('set-business').value,
+        defaultPrice: parseFloat(document.getElementById('set-price').value) || 0,
+        defaultCost: parseFloat(document.getElementById('set-cost').value) || 0,
+        defaultConfirmation: parseFloat(document.getElementById('set-confirm').value) || 70,
+        defaultDelivery: parseFloat(document.getElementById('set-delivery').value) || 65
+    };
+    await API.saveSettings(settings);
+    UI.setRate(settings.exchangeRate);
+    UI.toast('Paramètres sauvegardés');
+}
+
+document.addEventListener('DOMContentLoaded', loadSettings);
+</script>
+
+</body>
+</html>
