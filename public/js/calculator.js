@@ -7,7 +7,7 @@ const Calculator = {
         const cpr = parseFloat(data.cpr) || 0;
         const clicks = parseFloat(data.clicks) || 0;
         
-        // Prices are in DZD - convert to USD for calculations
+        // Prices entered in DZD
         const sellingPriceDZD = parseFloat(data.sellingPriceDZD) || 0;
         const productCostDZD = parseFloat(data.productCostDZD) || 0;
         const sellingPrice = sellingPriceDZD / rate;
@@ -16,32 +16,35 @@ const Calculator = {
         const confirmed = orders * (confirmationRate / 100);
         const delivered = confirmed * (deliveryRate / 100);
         
-        const revenue = orders * sellingPrice;
-        const revenueDZD = orders * sellingPriceDZD;
+        // COD: Revenue ONLY from DELIVERED orders
+        const revenue = delivered * sellingPrice;
+        const revenueDZD = delivered * sellingPriceDZD;
         
-        // NEW FORMULA: Profit = Revenue - (Delivered × ProductCost) - (CostPerDelivered)
-        const totalProductCostDelivered = delivered * productCost;
-        const totalProductCostDeliveredDZD = delivered * productCostDZD;
+        // COD: Product cost ONLY for DELIVERED orders
+        const productCostDelivered = delivered * productCost;
+        const productCostDeliveredDZD = delivered * productCostDZD;
         
+        // Coût par Achat Livré (per unit, for display)
         const costPerDelivered = delivered > 0 ? adSpend / delivered : 0;
         const costPerDeliveredDZD = costPerDelivered * rate;
         
-        const profit = revenue - totalProductCostDelivered - costPerDelivered;
-        const profitDZD = revenueDZD - totalProductCostDeliveredDZD - costPerDeliveredDZD;
+        // PROFIT = Revenue(Livré) - CoûtProduit(Livré) - DépensesPub(TOTALES)
+        const profit = revenue - productCostDelivered - adSpend;
+        const profitDZD = revenueDZD - productCostDeliveredDZD - (adSpend * rate);
         
-        // Profit Per Unit (based on delivered orders)
+        // Profit Per Unit = Profit / Commandes Livrées
         const profitPerUnit = delivered > 0 ? profit / delivered : 0;
         const profitPerUnitDZD = delivered > 0 ? profitDZD / delivered : 0;
         
         const cprCalc = orders > 0 ? adSpend / orders : 0;
         const roas = adSpend > 0 ? revenue / adSpend : 0;
         
-        const aov = orders > 0 ? revenue / orders : 0;
-        const aovDZD = orders > 0 ? revenueDZD / orders : 0;
-        const productCostPerOrder = orders > 0 ? (orders * productCost) / orders : 0;
-        const productCostPerOrderDZD = orders > 0 ? (orders * productCostDZD) / orders : 0;
-        const cprCap = aov - productCostPerOrder;
-        const cprCapDZD = aovDZD - productCostPerOrderDZD;
+        // AOV based on DELIVERED orders
+        const aov = delivered > 0 ? revenue / delivered : 0;
+        const aovDZD = delivered > 0 ? revenueDZD / delivered : 0;
+        
+        const cprCap = aov - productCost;
+        const cprCapDZD = aovDZD - productCostDZD;
         const breakEvenRoas = cprCap > 0 ? aov / cprCap : 0;
         
         const rpc = clicks > 0 ? revenue / clicks : 0;
@@ -52,13 +55,12 @@ const Calculator = {
             sellingPrice, sellingPriceDZD,
             productCost, productCostDZD,
             revenue, revenueDZD, 
-            totalProductCostDelivered, totalProductCostDeliveredDZD,
+            productCostDelivered, productCostDeliveredDZD,
             profit, profitDZD, 
             profitPerUnit, profitPerUnitDZD,
             adSpend, cpr, cprCalc, 
             costPerDelivered, costPerDeliveredDZD,
             roas, aov, aovDZD,
-            productCostPerOrder, productCostPerOrderDZD,
             cprCap, cprCapDZD,
             breakEvenRoas, rpc, cpc, clicks,
             adSpendDZD: adSpend * rate,
